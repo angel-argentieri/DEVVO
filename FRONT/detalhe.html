@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devvo — Detalhe do item</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+<nav class="nav">
+    <a href="index.html" class="logo">
+        <div class="logo-mark">D/div>
+        <div class="logo-text">Dev<span>vo</span></div>
+    </a>
+    <div class="nav-links">
+        <a href="index.html"><button class="btn btn-ghost">Voltar para lista</button></a>
+    </div>
+</nav>
+
+<div class="detalhe-wrap" id="detalhe-wrap">
+    <div class="empty-state">
+        <i class="ti ti-loader"></i>
+        <p>Carregando...</p>
+    </div>
+</div>
+
+<!-- Modal solicitar resgate -->
+<div class="modal-overlay" id="modal-resgatar">
+    <div class="modal">
+        <h3>Solicitar resgate</h3>
+        <p>Preencha seus dados. A secretaria vai analisar e entrar em contato.</p>
+        <input type="hidden" id="modal-id-item">
+        <div class="form-field">
+            <label>Sua matricula / RM</label>
+            <input type="text" id="modal-matricula" placeholder="Ex: 12345678">
+        </div>
+        <div class="form-field">
+            <label>Como voce prova que e seu?</label>
+            <textarea id="modal-mensagem" placeholder="Descreva detalhes unicos do item..."></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
+            <button class="btn btn-red" onclick="enviarSolicitacao()">Enviar solicitacao</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/main.js"></script>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const idItem = params.get('id');
+
+    async function carregarItem() {
+        if (!idItem) { window.location.href = 'index.html'; return; }
+
+        try {
+            const res  = await fetch(`${API}/item?id=${idItem}`);
+            const item = await res.json();
+
+            if (!item || item.error) { window.location.href = 'index.html'; return; }
+
+            document.title = `Devvo — ${item.titulo}`;
+
+            document.getElementById('detalhe-wrap').innerHTML = `
+                <button class="back-btn" onclick="history.back()">
+                    <i class="ti ti-arrow-left"></i> Voltar
+                </button>
+                <div class="det-grid">
+                    <div class="det-img">
+                        ${item.foto
+                            ? `<img src="uploads/${item.foto}" alt="${item.titulo}">`
+                            : `<div class="sem-foto"><i class="ti ti-photo-off"></i><span>Sem foto cadastrada</span></div>`
+                        }
+                    </div>
+                    <div class="det-info">
+                        <div>
+                            <div class="eyebrow">${item.categoria}</div>
+                            <div class="det-title">${item.titulo}</div>
+                        </div>
+                        ${item.descricao ? `
+                        <div class="det-row">
+                            <div class="det-label">Descricao</div>
+                            <div class="det-val">${item.descricao}</div>
+                        </div>` : ''}
+                        <div class="det-row">
+                            <div class="det-label">Encontrado em</div>
+                            <div class="det-val"><i class="ti ti-map-pin" style="font-size:13px"></i> ${item.local_encontrado}</div>
+                        </div>
+                        <div class="det-row">
+                            <div class="det-label">Guardado em</div>
+                            <div class="det-val">${item.local_armazenado || 'Secretaria'}</div>
+                        </div>
+                        <div class="det-row">
+                            <div class="det-label">Cadastrado em</div>
+                            <div class="det-val">${new Date(item.criado_em).toLocaleDateString('pt-BR')}</div>
+                        </div>
+                        <div class="det-row">
+                            <div class="det-label">Status</div>
+                            <div>${pillStatus(item.status)}</div>
+                        </div>
+                        <div class="det-actions">
+                            <button class="btn btn-red"
+                                onclick="abrirModal(${item.id_item})"
+                                ${item.status !== 'disponivel' ? 'disabled style="opacity:.4;cursor:default"' : ''}>
+                                ${item.status === 'disponivel' ? 'E meu!' : 'Item em analise'}
+                            </button>
+                            <button class="btn btn-outline" onclick="compartilhar()">
+                                <i class="ti ti-share"></i> Compartilhar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            window.location.href = 'index.html';
+        }
+    }
+
+    function abrirModal(idItem) {
+        document.getElementById('modal-id-item').value = idItem;
+        document.getElementById('modal-resgatar').classList.add('aberto');
+    }
+
+    function fecharModal() {
+        document.getElementById('modal-resgatar').classList.remove('aberto');
+    }
+
+    async function enviarSolicitacao() {
+        const idItem   = document.getElementById('modal-id-item').value;
+        const matricula = document.getElementById('modal-matricula').value.trim();
+        const mensagem = document.getElementById('modal-mensagem').value.trim();
+
+        if (!matricula || !mensagem) { toast('Preencha todos os campos.', 'err'); return; }
+
+        try {
+            const resUser = await fetch(`${API}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matricula, senha: '' })
+            });
+            const usuario = await resUser.json();
+
+            if (!usuario.id_usuario) { toast('Matricula nao encontrada.', 'err'); return; }
+
+            const res = await fetch(`${API}/solicitacao`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_item: idItem, id_aluno: usuario.id_usuario, mensagem })
+            });
+
+            if (res.ok) {
+                toast('Solicitacao enviada! A secretaria vai analisar.', 'ok');
+                fecharModal();
+                setTimeout(() => carregarItem(), 1000);
+            } else {
+                toast('Erro ao enviar solicitacao.', 'err');
+            }
+        } catch (e) {
+            toast('Erro de conexao.', 'err');
+        }
+    }
+
+    function compartilhar() {
+        navigator.clipboard.writeText(window.location.href);
+        toast('Link copiado!', 'ok');
+    }
+
+    carregarItem();
+</script>
+</body>
+</html>

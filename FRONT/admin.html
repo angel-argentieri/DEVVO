@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devvo — Painel Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+<nav class="nav">
+    <a href="index.html" class="logo">
+        <div class="logo-mark">D</div>
+        <div class="logo-text">Dev<span>vo</span></div>
+    </a>
+    <div class="nav-links">
+        <span style="font-size:13px;color:#444" id="nome-admin"></span>
+        <button class="btn btn-ghost btn-sm" onclick="sair()">
+            <i class="ti ti-logout"></i> Sair
+        </button>
+    </div>
+</nav>
+
+<div class="admin-layout">
+    <aside class="sidebar">
+        <div class="sb-group-label">Menu</div>
+        <a href="admin.html" class="sb-item ativo">
+            <i class="ti ti-layout-dashboard"></i> Dashboard
+        </a>
+        <a href="cadastrar.html" class="sb-item">
+            <i class="ti ti-plus"></i> Cadastrar item
+        </a>
+        <a href="solicitacoes.html" class="sb-item">
+            <i class="ti ti-inbox"></i> Solicitacoes
+            <span id="badge-pendentes" style="margin-left:auto;background:var(--vermelho);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;display:none"></span>
+        </a>
+        <div class="sb-divider"></div>
+        <a href="index.html" class="sb-item">
+            <i class="ti ti-home"></i> Ver site
+        </a>
+        <a href="#" class="sb-item" onclick="sair()">
+            <i class="ti ti-logout"></i> Sair
+        </a>
+    </aside>
+
+    <main class="admin-main">
+        <div class="admin-header">
+            <div class="admin-title">Dashboard</div>
+            <a href="cadastrar.html">
+                <button class="btn btn-red btn-sm">
+                    <i class="ti ti-plus"></i> Novo item
+                </button>
+            </a>
+        </div>
+
+        <div class="stats-row" id="stats-row">
+            <div class="stat-card">
+                <div class="stat-num red" id="stat-disponiveis">—</div>
+                <div class="stat-label">Itens disponiveis</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="stat-analise">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="stat-entregues">—</div>
+                <div class="stat-label">Entregues</div>
+            </div>
+        </div>
+
+        <div class="section-header" style="margin-bottom:12px">
+            <div class="section-title">Todos os itens</div>
+        </div>
+
+        <div class="table-wrap">
+            <div class="table-head table-cols-itens">
+                <span>Item</span>
+                <span>Local</span>
+                <span>Status</span>
+                <span>Acao</span>
+            </div>
+            <div id="tabela-itens">
+                <div class="empty-state"><i class="ti ti-loader"></i><p>Carregando...</p></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/main.js"></script>
+<script>
+    const usuario = redirecionarSeNaoLogado('admin');
+    if (usuario) document.getElementById('nome-admin').textContent = usuario.nome;
+
+    async function carregarDashboard() {
+        const [resDash, resItens, resSol] = await Promise.all([
+            fetch(`${API}/dashboard`),
+            fetch(`${API}/itens-admin`),
+            fetch(`${API}/solicitacoes`)
+        ]);
+
+        const dash   = await resDash.json();
+        const itens  = await resItens.json();
+        const sols   = await resSol.json();
+
+        document.getElementById('stat-disponiveis').textContent = dash.disponiveis;
+        document.getElementById('stat-analise').textContent     = dash.em_analise;
+        document.getElementById('stat-entregues').textContent   = dash.entregues;
+
+        const pendentes = sols.filter(s => s.status_analise === 'pendente').length;
+        if (pendentes > 0) {
+            const badge = document.getElementById('badge-pendentes');
+            badge.textContent = pendentes;
+            badge.style.display = 'inline-block';
+        }
+
+        const tabela = document.getElementById('tabela-itens');
+        if (!itens.length) {
+            tabela.innerHTML = '<div class="empty-state"><i class="ti ti-inbox-off"></i><p>Nenhum item cadastrado.</p></div>';
+            return;
+        }
+
+        tabela.innerHTML = itens.map(item => `
+            <div class="table-row table-cols-itens">
+                <div>
+                    <div class="tr-title">${item.titulo}</div>
+                    <div class="tr-sub">${item.categoria} · ${formatarData(item.criado_em)}</div>
+                </div>
+                <div class="tr-val">${item.local_encontrado}</div>
+                <div>${pillStatus(item.status)}</div>
+                <div style="display:flex;gap:6px">
+                    ${item.status === 'disponivel' || item.status === 'disponivel' ? `
+                        <button class="btn-dar" onclick="darBaixa(${item.id_item})">Dar baixa</button>
+                    ` : '—'}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function darBaixa(id) {
+        if (!confirm('Confirmar entrega do item?')) return;
+        const res = await fetch(`${API}/item-status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, status: 'entregue' })
+        });
+        if (res.ok) { toast('Item marcado como entregue!', 'ok'); carregarDashboard(); }
+        else toast('Erro ao atualizar status.', 'err');
+    }
+
+    function sair() {
+        localStorage.removeItem('Devvo_usuario');
+        window.location.href = 'login.html';
+    }
+
+    carregarDashboard();
+</script>
+</body>
+</html>

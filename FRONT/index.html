@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devvo — Achados e Perdidos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+<nav class="nav">
+    <a href="index.html" class="logo">
+        <div class="logo-mark">D</div>
+        <div class="logo-text">Dev<span>vo</span></div>
+    </a>
+    <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="hero">
+    <div class="eyebrow">SESI / SENAI</div>
+    <h1>Perdeu algo<br><span class="dim">na escola?</span></h1>
+    <p>Tudo que e encontrado fica registrado aqui. Busque pelo seu item ou abra uma solicitacao de resgate.</p>
+
+    <div class="search-row">
+        <div class="search-field">
+            <i class="ti ti-search"></i>
+            <input type="text" id="input-busca" placeholder="Buscar por item, cor ou local...">
+        </div>
+        <button class="btn btn-red" onclick="buscar()">Buscar</button>
+    </div>
+
+    <div class="chips" id="chips-categoria">
+        <button class="chip ativo" onclick="filtrarTodos(this)">Todos</button>
+    </div>
+</div>
+
+<div class="divider">
+    <span>Achados recentes</span>
+    <hr>
+</div>
+
+<div class="section">
+    <div class="grid-cards" id="grid-itens">
+        <div class="empty-state" style="grid-column:1/-1">
+            <i class="ti ti-loader"></i>
+            <p>Carregando itens...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Modal "e meu" -->
+<div class="modal-overlay" id="modal-resgatar">
+    <div class="modal">
+        <h3>Solicitar resgate</h3>
+        <p>Descreva como voce prova que o item e seu. A secretaria vai analisar e entrar em contato.</p>
+        <input type="hidden" id="modal-id-item">
+        <div class="form-field">
+            <label>Como voce prova que e seu?</label>
+            <textarea id="modal-mensagem" placeholder="Descreva detalhes unicos do item..."></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
+            <button class="btn btn-red" onclick="enviarSolicitacao()">Enviar</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/main.js"></script>
+<script>
+    // Verifica login ao entrar
+    const usuario = getUsuario();
+    if (!usuario) {
+        window.location.href = 'login.html';
+    }
+
+    // Se for admin manda pro painel
+    if (usuario && usuario.tipo_acesso === 'admin') {
+        window.location.href = 'admin.html';
+    }
+
+    // Monta o nav com o nome do usuario
+    if (usuario) {
+        document.getElementById('nav-links').innerHTML =
+            '<span style="font-size:13px;color:#555">' + usuario.nome + '</span>' +
+            '<button class="btn btn-ghost" onclick="sair()">Sair</button>' +
+            '<button class="btn btn-red" onclick="abrirModal()">Perdi algo</button>';
+    }
+
+    let categoriaAtiva = '';
+
+    async function carregarCategorias() {
+        const res  = await fetch(API + '/categorias');
+        const cats = await res.json();
+        const wrap = document.getElementById('chips-categoria');
+
+        cats.forEach(function(c) {
+            const btn = document.createElement('button');
+            btn.className = 'chip';
+            btn.textContent = c.nome;
+            btn.onclick = function() { filtrarCategoria(c.id_categoria, btn); };
+            wrap.appendChild(btn);
+        });
+    }
+
+    function filtrarTodos(btn) {
+        categoriaAtiva = '';
+        document.querySelectorAll('.chip').forEach(function(c) { c.classList.remove('ativo'); });
+        btn.classList.add('ativo');
+        carregarItens();
+    }
+
+    function filtrarCategoria(id, btn) {
+        categoriaAtiva = id;
+        document.querySelectorAll('.chip').forEach(function(c) { c.classList.remove('ativo'); });
+        btn.classList.add('ativo');
+        carregarItens();
+    }
+
+    async function carregarItens() {
+        const busca = document.getElementById('input-busca').value.trim();
+        let url = API + '/itens';
+        const params = [];
+
+        if (categoriaAtiva) params.push('categoria=' + categoriaAtiva);
+        if (busca)          params.push('busca=' + encodeURIComponent(busca));
+        if (params.length)  url += '?' + params.join('&');
+
+        const grid = document.getElementById('grid-itens');
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-loader"></i><p>Carregando...</p></div>';
+
+        const res   = await fetch(url);
+        const itens = await res.json();
+
+        if (!itens.length) {
+            grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-search-off"></i><p>Nenhum item encontrado.</p></div>';
+            return;
+        }
+
+        let html = '';
+        itens.forEach(function(item) {
+            let thumb = '';
+            if (item.foto) {
+                thumb = '<img src="uploads/' + item.foto + '" alt="' + item.titulo + '">';
+            } else {
+                thumb = '<div class="sem-foto"><i class="ti ti-photo-off"></i><span>Sem foto</span></div>';
+            }
+
+            html += '<div class="card" onclick="window.location.href=\'detalhe.html?id=' + item.id_item + '\'">';
+            html += '  <div class="card-thumb">' + thumb + badgeStatus(item.status) + '</div>';
+            html += '  <div class="card-body">';
+            html += '    <div class="card-cat">' + item.categoria + '</div>';
+            html += '    <div class="card-title">' + item.titulo + '</div>';
+            html += '    <div class="card-local"><i class="ti ti-map-pin"></i> ' + item.local_encontrado + '</div>';
+            html += '    <div class="card-footer">';
+            html += '      <span class="card-date">' + formatarData(item.criado_em) + '</span>';
+            html += '      <button class="btn-claim" onclick="event.stopPropagation(); abrirModalItem(' + item.id_item + ')">E meu!</button>';
+            html += '    </div>';
+            html += '  </div>';
+            html += '</div>';
+        });
+
+        grid.innerHTML = html;
+    }
+
+    function buscar() {
+        carregarItens();
+    }
+
+    document.getElementById('input-busca').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') buscar();
+    });
+
+    function abrirModal() {
+        document.getElementById('modal-resgatar').classList.add('aberto');
+    }
+
+    function fecharModal() {
+        document.getElementById('modal-resgatar').classList.remove('aberto');
+    }
+
+    function abrirModalItem(idItem) {
+        document.getElementById('modal-id-item').value = idItem;
+        abrirModal();
+    }
+
+    async function enviarSolicitacao() {
+        const idItem   = document.getElementById('modal-id-item').value;
+        const mensagem = document.getElementById('modal-mensagem').value.trim();
+
+        if (!mensagem) {
+            toast('Descreva como prova que o item e seu.', 'err');
+            return;
+        }
+
+        const res = await fetch(API + '/solicitacao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_item: idItem, id_aluno: usuario.id_usuario, mensagem })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            toast(data.error, 'err');
+            return;
+        }
+
+        toast('Solicitacao enviada! A secretaria vai entrar em contato.', 'ok');
+        fecharModal();
+        document.getElementById('modal-mensagem').value = '';
+    }
+
+    carregarCategorias();
+    carregarItens();
+</script>
+</body>
+</html>

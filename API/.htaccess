@@ -1,0 +1,9 @@
+# public/.htaccess
+RewriteEngine on
+
+# Se o arquivo ou diretorio existe, serve direto
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# caso contrario, redireciona para index.php
+RewriteRule ^ public/index.php [QSA,L] #vai definir o que chega na url public

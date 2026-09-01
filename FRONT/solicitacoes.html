@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devvo — Solicitacoes</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+<nav class="nav">
+    <a href="index.html" class="logo">
+        <div class="logo-mark">D/div>
+        <div class="logo-text">Dev<span>vo</span></div>
+    </a>
+    <div class="nav-links">
+        <span style="font-size:13px;color:#444" id="nome-admin"></span>
+        <button class="btn btn-ghost btn-sm" onclick="sair()">
+            <i class="ti ti-logout"></i> Sair
+        </button>
+    </div>
+</nav>
+
+<div class="admin-layout">
+    <aside class="sidebar">
+        <div class="sb-group-label">Menu</div>
+        <a href="admin.html" class="sb-item">
+            <i class="ti ti-layout-dashboard"></i> Dashboard
+        </a>
+        <a href="cadastrar.html" class="sb-item">
+            <i class="ti ti-plus"></i> Cadastrar item
+        </a>
+        <a href="solicitacoes.html" class="sb-item ativo">
+            <i class="ti ti-inbox"></i> Solicitacoes
+        </a>
+        <div class="sb-divider"></div>
+        <a href="index.html" class="sb-item">
+            <i class="ti ti-home"></i> Ver site
+        </a>
+        <a href="#" class="sb-item" onclick="sair()">
+            <i class="ti ti-logout"></i> Sair
+        </a>
+    </aside>
+
+    <main class="admin-main">
+        <div class="admin-header">
+            <div class="admin-title">Solicitacoes de resgate</div>
+        </div>
+
+        <div class="table-wrap">
+            <div class="table-head table-cols-solicitacoes">
+                <span>Item</span>
+                <span>Aluno</span>
+                <span>Status</span>
+                <span>Acoes</span>
+            </div>
+            <div id="tabela-solicitacoes">
+                <div class="empty-state"><i class="ti ti-loader"></i><p>Carregando...</p></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal ver mensagem -->
+<div class="modal-overlay" id="modal-mensagem">
+    <div class="modal">
+        <h3>Comprovacao do aluno</h3>
+        <p id="texto-mensagem" style="white-space:pre-wrap"></p>
+        <div class="modal-actions" style="margin-top:0">
+            <button class="btn btn-ghost" onclick="fecharModal()">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/main.js"></script>
+<script>
+    const usuario = redirecionarSeNaoLogado('admin');
+    if (usuario) document.getElementById('nome-admin').textContent = usuario.nome;
+
+    async function carregarSolicitacoes() {
+        const res  = await fetch(`${API}/solicitacoes`);
+        const sols = await res.json();
+
+        const tabela = document.getElementById('tabela-solicitacoes');
+
+        if (!sols.length) {
+            tabela.innerHTML = '<div class="empty-state"><i class="ti ti-inbox-off"></i><p>Nenhuma solicitacao recebida.</p></div>';
+            return;
+        }
+
+        const pillSol = {
+            'pendente':  '<span class="pill pill-hold">Pendente</span>',
+            'aprovada':  '<span class="pill pill-ok">Aprovada</span>',
+            'recusada':  '<span class="pill pill-gray">Recusada</span>',
+        };
+
+        tabela.innerHTML = sols.map(s => `
+            <div class="table-row table-cols-solicitacoes">
+                <div>
+                    <div class="tr-title">${s.item_titulo}</div>
+                    <div class="tr-sub">${formatarData(s.criado_em)}</div>
+                </div>
+                <div>
+                    <div class="tr-title">${s.aluno_nome}</div>
+                    <div class="tr-sub">RM: ${s.matricula}</div>
+                </div>
+                <div>${pillSol[s.status_analise] || s.status_analise}</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn-dar" style="background:transparent;color:var(--vermelho-text);border:1px solid var(--vermelho-borda)"
+                        onclick="verMensagem('${s.mensagem.replace(/'/g, "\\'")}')">
+                        Ver prova
+                    </button>
+                    ${s.status_analise === 'pendente' ? `
+                        <button class="btn-aprovar" onclick="atualizarStatus(${s.id_solicitacao}, 'aprovada')">Aprovar</button>
+                        <button class="btn-dar" style="background:var(--superficie2);color:#555;border:1px solid var(--borda)" 
+                            onclick="atualizarStatus(${s.id_solicitacao}, 'recusada')">Recusar</button>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function atualizarStatus(id, status) {
+        const acao = status === 'aprovada' ? 'aprovar' : 'recusar';
+        if (!confirm(`Deseja ${acao} esta solicitacao?`)) return;
+
+        const res = await fetch(`${API}/solicitacao-status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, status })
+        });
+
+        if (res.ok) {
+            toast(status === 'aprovada' ? 'Solicitacao aprovada!' : 'Solicitacao recusada.', 'ok');
+            carregarSolicitacoes();
+        } else {
+            toast('Erro ao atualizar.', 'err');
+        }
+    }
+
+    function verMensagem(msg) {
+        document.getElementById('texto-mensagem').textContent = msg;
+        document.getElementById('modal-mensagem').classList.add('aberto');
+    }
+
+    function fecharModal() {
+        document.getElementById('modal-mensagem').classList.remove('aberto');
+    }
+
+    function sair() {
+        localStorage.removeItem('Devvo_usuario');
+        window.location.href = 'login.html';
+    }
+
+    carregarSolicitacoes();
+</script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devvo — Cadastrar item</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+<nav class="nav">
+    <a href="index.html" class="logo">
+        <div class="logo-mark">D/div>
+        <div class="logo-text">Dev<span>vo</span></div>
+    </a>
+    <div class="nav-links">
+        <a href="admin.html"><button class="btn btn-ghost btn-sm">← Voltar</button></a>
+    </div>
+</nav>
+
+<div class="admin-layout">
+    <aside class="sidebar">
+        <div class="sb-group-label">Menu</div>
+        <a href="admin.html" class="sb-item">
+            <i class="ti ti-layout-dashboard"></i> Dashboard
+        </a>
+        <a href="cadastrar.html" class="sb-item ativo">
+            <i class="ti ti-plus"></i> Cadastrar item
+        </a>
+        <a href="solicitacoes.html" class="sb-item">
+            <i class="ti ti-inbox"></i> Solicitacoes
+        </a>
+        <div class="sb-divider"></div>
+        <a href="index.html" class="sb-item">
+            <i class="ti ti-home"></i> Ver site
+        </a>
+        <a href="#" class="sb-item" onclick="sair()">
+            <i class="ti ti-logout"></i> Sair
+        </a>
+    </aside>
+
+    <main class="admin-main">
+        <div class="admin-header">
+            <div class="admin-title">Cadastrar item achado</div>
+        </div>
+
+        <div style="max-width:560px">
+            <div class="form-row">
+                <div class="form-field">
+                    <label>Titulo do item *</label>
+                    <input type="text" id="titulo" placeholder="Ex: Casaco preto sem etiqueta">
+                </div>
+                <div class="form-field">
+                    <label>Categoria *</label>
+                    <select id="categoria">
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label>Descricao</label>
+                <textarea id="descricao" placeholder="Detalhe caracteristicas do item..."></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label>Onde foi encontrado *</label>
+                    <input type="text" id="local-encontrado" placeholder="Ex: Quadra poliesportiva">
+                </div>
+                <div class="form-field">
+                    <label>Onde esta guardado</label>
+                    <input type="text" id="local-armazenado" placeholder="Ex: Secretaria - Armario B">
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label>Foto do item</label>
+                <div class="upload-area" onclick="document.getElementById('input-foto').click()">
+                    <i class="ti ti-upload"></i>
+                    <p>Clique para anexar uma foto</p>
+                </div>
+                <input type="file" id="input-foto" accept="image/*" style="display:none" onchange="previewFoto(this)">
+                <img id="preview-foto" src="" alt="Preview">
+            </div>
+
+            <button class="btn btn-red btn-full" onclick="cadastrarItem()" style="margin-top:8px">
+                Cadastrar item
+            </button>
+        </div>
+    </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/main.js"></script>
+<script>
+    const usuario = redirecionarSeNaoLogado('admin');
+
+    async function carregarCategorias() {
+        const res  = await fetch(`${API}/categorias`);
+        const cats = await res.json();
+        const sel  = document.getElementById('categoria');
+        cats.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id_categoria;
+            opt.textContent = c.nome;
+            sel.appendChild(opt);
+        });
+    }
+
+    function previewFoto(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            const img = document.getElementById('preview-foto');
+            img.src = e.target.result;
+            img.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function cadastrarItem() {
+        const titulo           = document.getElementById('titulo').value.trim();
+        const id_categoria     = document.getElementById('categoria').value;
+        const descricao        = document.getElementById('descricao').value.trim();
+        const local_encontrado = document.getElementById('local-encontrado').value.trim();
+        const local_armazenado = document.getElementById('local-armazenado').value.trim();
+
+        if (!titulo || !id_categoria || !local_encontrado) {
+            toast('Preencha os campos obrigatorios (*).', 'err');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('titulo',           titulo);
+        formData.append('id_categoria',     id_categoria);
+        formData.append('descricao',        descricao);
+        formData.append('local_encontrado', local_encontrado);
+        formData.append('local_armazenado', local_armazenado);
+        formData.append('id_usuario',       usuario.id_usuario);
+
+        const foto = document.getElementById('input-foto').files[0];
+        if (foto) formData.append('foto', foto);
+
+        try {
+            const res = await fetch(`${API}/itens`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                toast('Item cadastrado com sucesso!', 'ok');
+                setTimeout(() => window.location.href = 'admin.html', 1200);
+            } else {
+                toast(data.error || 'Erro ao cadastrar.', 'err');
+            }
+        } catch (e) {
+            toast('Erro de conexao.', 'err');
+        }
+    }
+
+    function sair() {
+        localStorage.removeItem('Devvo_usuario');
+        window.location.href = 'login.html';
+    }
+
+    carregarCategorias();
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devvo — Entrar</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+<nav class="nav">
+    <a href="login.html" class="logo">
+        <div class="logo-mark">D</div>
+        <div class="logo-text">Dev<span>vo</span></div>
+    </a>
+</nav>
+
+<div class="login-wrap">
+    <div class="login-box">
+        <div class="eyebrow" style="margin-bottom:14px">SESI / SENAI</div>
+
+        <!-- Tela de Login -->
+        <div id="tela-login">
+            <h2>Bem-vindo de volta</h2>
+            <p>Entre com sua matricula e senha para acessar.</p>
+
+            <div class="form-field">
+                <label>Matricula / RM</label>
+                <input type="text" id="login-matricula" placeholder="Ex: 12345678">
+            </div>
+
+            <div class="form-field">
+                <label>Senha</label>
+                <input type="password" id="login-senha" placeholder="••••••••">
+            </div>
+
+            <button class="btn btn-red btn-full" onclick="fazerLogin()">Entrar</button>
+
+            <div class="login-foot" style="margin-top:16px">
+                Nao tem conta? <a onclick="mostrarCadastro()">Criar conta</a>
+            </div>
+        </div>
+
+        <!-- Tela de Cadastro -->
+        <div id="tela-cadastro" style="display:none">
+            <h2>Criar conta</h2>
+            <p>Preencha seus dados para se cadastrar.</p>
+
+            <div class="form-field">
+                <label>Nome completo</label>
+                <input type="text" id="cad-nome" placeholder="Seu nome">
+            </div>
+
+            <div class="form-field">
+                <label>Matricula / RM</label>
+                <input type="text" id="cad-matricula" placeholder="Ex: 12345678">
+            </div>
+
+            <div class="form-field">
+                <label>E-mail (opcional)</label>
+                <input type="email" id="cad-email" placeholder="seuemail@sesi.com">
+            </div>
+
+            <div class="form-field">
+                <label>Senha</label>
+                <input type="password" id="cad-senha" placeholder="••••••••">
+            </div>
+
+            <button class="btn btn-red btn-full" onclick="fazerCadastro()">Criar conta</button>
+
+            <div class="login-foot" style="margin-top:16px">
+                Ja tem conta? <a onclick="mostrarLogin()">Entrar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/main.js"></script>
+<script>
+    // Se ja estiver logado manda pra pagina certa
+    const u = getUsuario();
+    if (u) {
+        if (u.tipo_acesso === 'admin') {
+            window.location.href = 'admin.html';
+        } else {
+            window.location.href = 'index.html';
+        }
+    }
+
+    function mostrarCadastro() {
+        document.getElementById('tela-login').style.display = 'none';
+        document.getElementById('tela-cadastro').style.display = 'block';
+    }
+
+    function mostrarLogin() {
+        document.getElementById('tela-cadastro').style.display = 'none';
+        document.getElementById('tela-login').style.display = 'block';
+    }
+
+    async function fazerLogin() {
+        const matricula = document.getElementById('login-matricula').value.trim();
+        const senha     = document.getElementById('login-senha').value;
+
+        if (!matricula || !senha) {
+            toast('Preencha todos os campos.', 'err');
+            return;
+        }
+
+        const res  = await fetch(API + '/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ matricula, senha })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            toast(data.error, 'err');
+            return;
+        }
+
+        salvarUsuario(data);
+
+        if (data.tipo_acesso === 'admin') {
+            window.location.href = 'admin.html';
+        } else {
+            window.location.href = 'index.html';
+        }
+    }
+
+    async function fazerCadastro() {
+        const nome      = document.getElementById('cad-nome').value.trim();
+        const matricula = document.getElementById('cad-matricula').value.trim();
+        const email     = document.getElementById('cad-email').value.trim();
+        const senha     = document.getElementById('cad-senha').value;
+
+        if (!nome || !matricula || !senha) {
+            toast('Preencha nome, matricula e senha.', 'err');
+            return;
+        }
+
+        const res  = await fetch(API + '/cadastrar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, matricula, email, senha })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            toast(data.error, 'err');
+            return;
+        }
+
+        toast('Conta criada! Faca o login.', 'ok');
+        mostrarLogin();
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+
+        const cadastroVisivel = document.getElementById('tela-cadastro').style.display !== 'none';
+        if (cadastroVisivel) {
+            fazerCadastro();
+        } else {
+            fazerLogin();
+        }
+    });
+</script>
+</body>
+</html>
