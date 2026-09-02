@@ -66,6 +66,34 @@
     </div>
 </div>
 
+<!-- Modal "perdi algo" -->
+<div class="modal-overlay" id="modal-perdi">
+    <div class="modal">
+        <h3>Reportar item perdido</h3>
+        <p>Descreva o que voce perdeu. Se alguem encontrar, a secretaria vai avisar.</p>
+        <div class="form-field">
+            <label>O que voce perdeu?</label>
+            <input type="text" id="perdi-titulo" placeholder="Ex: Garrafa azul">
+        </div>
+        <div class="form-field">
+            <label>Categoria</label>
+            <select id="perdi-categoria"></select>
+        </div>
+        <div class="form-field">
+            <label>Onde perdeu (ou por onde andou)?</label>
+            <input type="text" id="perdi-local" placeholder="Ex: Quadra, sala 12...">
+        </div>
+        <div class="form-field">
+            <label>Detalhes (opcional)</label>
+            <textarea id="perdi-descricao" placeholder="Cor, marca, alguma marca especifica..."></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="fecharModalPerdi()">Cancelar</button>
+            <button class="btn btn-red" onclick="enviarPerdido()">Enviar</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="js/main.js"></script>
@@ -86,7 +114,7 @@
         document.getElementById('nav-links').innerHTML =
             '<span style="font-size:13px;color:#555">' + usuario.nome + '</span>' +
             '<button class="btn btn-ghost" onclick="sair()">Sair</button>' +
-            '<button class="btn btn-red" onclick="abrirModal()">Perdi algo</button>';
+            '<button class="btn btn-red" onclick="abrirModalPerdi()">Perdi algo</button>';
     }
 
     let categoriaAtiva = '';
@@ -102,6 +130,14 @@
             btn.textContent = c.nome;
             btn.onclick = function() { filtrarCategoria(c.id_categoria, btn); };
             wrap.appendChild(btn);
+        });
+
+        const select = document.getElementById('perdi-categoria');
+        cats.forEach(function(c) {
+            const opt = document.createElement('option');
+            opt.value = c.id_categoria;
+            opt.textContent = c.nome;
+            select.appendChild(opt);
         });
     }
 
@@ -211,6 +247,51 @@
         toast('Solicitacao enviada! A secretaria vai entrar em contato.', 'ok');
         fecharModal();
         document.getElementById('modal-mensagem').value = '';
+    }
+
+    function abrirModalPerdi() {
+        document.getElementById('modal-perdi').classList.add('aberto');
+    }
+
+    function fecharModalPerdi() {
+        document.getElementById('modal-perdi').classList.remove('aberto');
+    }
+
+    async function enviarPerdido() {
+        const titulo    = document.getElementById('perdi-titulo').value.trim();
+        const categoria = document.getElementById('perdi-categoria').value;
+        const local     = document.getElementById('perdi-local').value.trim();
+        const descricao = document.getElementById('perdi-descricao').value.trim();
+
+        if (!titulo || !categoria || !local) {
+            toast('Preencha os campos obrigatorios.', 'err');
+            return;
+        }
+
+        const res = await fetch(API + '/item-perdido', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id_categoria: categoria,
+                id_aluno: usuario.id_usuario,
+                titulo: titulo,
+                descricao: descricao,
+                local_perdido: local
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            toast(data.error, 'err');
+            return;
+        }
+
+        toast('Registrado! Avisamos se encontrarmos.', 'ok');
+        fecharModalPerdi();
+        document.getElementById('perdi-titulo').value = '';
+        document.getElementById('perdi-local').value = '';
+        document.getElementById('perdi-descricao').value = '';
     }
 
     carregarCategorias();

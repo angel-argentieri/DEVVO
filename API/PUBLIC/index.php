@@ -16,6 +16,7 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
 require_once '../CONFIG/db.php';
 require_once '../APP/CONTROLLER/UsuarioController.php';
 require_once '../APP/CONTROLLER/ItemController.php';
+require_once '../APP/CONTROLLER/ItemPerdidoController.php';
 require_once '../APP/CONTROLLER/SolicitacaoController.php';
 require_once '../APP/CONTROLLER/CategoriaController.php';
 
@@ -25,6 +26,7 @@ $db       = $database->getConnection();
 $itemController       = new ItemController($db);
 $solicitacaoController = new SolicitacaoController($db);
 $categoriaController  = new CategoriaController($db);
+$itemPerdidoController = new ItemPerdidoController($db);
 $usuarioController    = new UsuarioController($db);
 
 $path   = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -57,6 +59,14 @@ try {
 
         case 'itens-admin':
             if ($method === 'GET') { $itemController->getItensAdmin(); exit; }
+            break;
+
+        case 'item-perdido':
+            if ($method === 'POST') { $itemPerdidoController->criar(); exit; }
+            break;
+
+        case 'itens-perdidos':
+            if ($method === 'GET') { $itemPerdidoController->getPerdidos(); exit; }
             break;
 
         case 'item-status':

@@ -68,19 +68,38 @@
             </div>
         </div>
 
-        <div class="section-header" style="margin-bottom:12px">
-            <div class="section-title">Todos os itens</div>
-        </div>
-
-        <div class="table-wrap">
-            <div class="table-head table-cols-itens">
-                <span>Item</span>
-                <span>Local</span>
-                <span>Status</span>
-                <span>Acao</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+            <div>
+                <div class="section-header" style="margin-bottom:12px">
+                    <div class="section-title">Cadastrado pelo administrador</div>
+                </div>
+                <div class="table-wrap">
+                    <div class="table-head table-cols-itens">
+                        <span>Item</span>
+                        <span>Local</span>
+                        <span>Status</span>
+                        <span>Acao</span>
+                    </div>
+                    <div id="tabela-itens">
+                        <div class="empty-state"><i class="ti ti-loader"></i><p>Carregando...</p></div>
+                    </div>
+                </div>
             </div>
-            <div id="tabela-itens">
-                <div class="empty-state"><i class="ti ti-loader"></i><p>Carregando...</p></div>
+
+            <div>
+                <div class="section-header" style="margin-bottom:12px">
+                    <div class="section-title">Perdi algo (aluno)</div>
+                </div>
+                <div class="table-wrap">
+                    <div class="table-head table-cols-solicitacoes-mini">
+                        <span>Item</span>
+                        <span>Aluno</span>
+                        <span>Status</span>
+                    </div>
+                    <div id="tabela-perdidos">
+                        <div class="empty-state"><i class="ti ti-loader"></i><p>Carregando...</p></div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -118,24 +137,42 @@
         const tabela = document.getElementById('tabela-itens');
         if (!itens.length) {
             tabela.innerHTML = '<div class="empty-state"><i class="ti ti-inbox-off"></i><p>Nenhum item cadastrado.</p></div>';
-            return;
+        } else {
+            tabela.innerHTML = itens.map(item => `
+                <div class="table-row table-cols-itens">
+                    <div>
+                        <div class="tr-title">${item.titulo}</div>
+                        <div class="tr-sub">${item.categoria} · ${formatarData(item.criado_em)}</div>
+                    </div>
+                    <div class="tr-val">${item.local_encontrado}</div>
+                    <div>${pillStatus(item.status)}</div>
+                    <div style="display:flex;gap:6px">
+                        ${item.status === 'disponivel' ? `
+                            <button class="btn-dar" onclick="darBaixa(${item.id_item})">Dar baixa</button>
+                        ` : '—'}
+                    </div>
+                </div>
+            `).join('');
         }
 
-        tabela.innerHTML = itens.map(item => `
-            <div class="table-row table-cols-itens">
-                <div>
-                    <div class="tr-title">${item.titulo}</div>
-                    <div class="tr-sub">${item.categoria} · ${formatarData(item.criado_em)}</div>
+        const pillSol = {
+            'pendente':  '<span class="pill pill-hold">Pendente</span>',
+            'aprovada':  '<span class="pill pill-ok">Aprovada</span>',
+            'recusada':  '<span class="pill pill-gray">Recusada</span>',
+        };
+
+        const tabelaPerdidos = document.getElementById('tabela-perdidos');
+        if (!sols.length) {
+            tabelaPerdidos.innerHTML = '<div class="empty-state"><i class="ti ti-inbox-off"></i><p>Nenhuma solicitacao.</p></div>';
+        } else {
+            tabelaPerdidos.innerHTML = sols.map(s => `
+                <div class="table-row table-cols-solicitacoes-mini">
+                    <div class="tr-val">${s.item_titulo}</div>
+                    <div class="tr-val">${s.aluno_nome}</div>
+                    <div>${pillSol[s.status_analise] || s.status_analise}</div>
                 </div>
-                <div class="tr-val">${item.local_encontrado}</div>
-                <div>${pillStatus(item.status)}</div>
-                <div style="display:flex;gap:6px">
-                    ${item.status === 'disponivel' || item.status === 'disponivel' ? `
-                        <button class="btn-dar" onclick="darBaixa(${item.id_item})">Dar baixa</button>
-                    ` : '—'}
-                </div>
-            </div>
-        `).join('');
+            `).join('');
+        }
     }
 
     async function darBaixa(id) {
@@ -150,7 +187,7 @@
     }
 
     function sair() {
-        localStorage.removeItem('Devvo_usuario');
+        localStorage.removeItem('devvo_usuario');
         window.location.href = 'login.html';
     }
 
