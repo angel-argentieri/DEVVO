@@ -113,21 +113,21 @@
     if (usuario) document.getElementById('nome-admin').textContent = usuario.nome;
 
     async function carregarDashboard() {
-        const [resDash, resItens, resSol] = await Promise.all([
+        const [resDash, resItens, resPerdidos] = await Promise.all([
             fetch(`${API}/dashboard`),
             fetch(`${API}/itens-admin`),
-            fetch(`${API}/solicitacoes`)
+            fetch(`${API}/itens-perdidos`)
         ]);
 
-        const dash   = await resDash.json();
-        const itens  = await resItens.json();
-        const sols   = await resSol.json();
+        const dash     = await resDash.json();
+        const itens    = await resItens.json();
+        const perdidos = await resPerdidos.json();
 
         document.getElementById('stat-disponiveis').textContent = dash.disponiveis;
         document.getElementById('stat-analise').textContent     = dash.em_analise;
         document.getElementById('stat-entregues').textContent   = dash.entregues;
 
-        const pendentes = sols.filter(s => s.status_analise === 'pendente').length;
+        const pendentes = perdidos.filter(p => p.status === 'pendente').length;
         if (pendentes > 0) {
             const badge = document.getElementById('badge-pendentes');
             badge.textContent = pendentes;
@@ -155,21 +155,20 @@
             `).join('');
         }
 
-        const pillSol = {
+        const pillPerdido = {
             'pendente':  '<span class="pill pill-hold">Pendente</span>',
-            'aprovada':  '<span class="pill pill-ok">Aprovada</span>',
-            'recusada':  '<span class="pill pill-gray">Recusada</span>',
+            'encontrado':'<span class="pill pill-ok">Encontrado</span>',
         };
 
         const tabelaPerdidos = document.getElementById('tabela-perdidos');
-        if (!sols.length) {
-            tabelaPerdidos.innerHTML = '<div class="empty-state"><i class="ti ti-inbox-off"></i><p>Nenhuma solicitacao.</p></div>';
+        if (!perdidos.length) {
+            tabelaPerdidos.innerHTML = '<div class="empty-state"><i class="ti ti-inbox-off"></i><p>Nenhum item perdido registrado.</p></div>';
         } else {
-            tabelaPerdidos.innerHTML = sols.map(s => `
+            tabelaPerdidos.innerHTML = perdidos.map(p => `
                 <div class="table-row table-cols-solicitacoes-mini">
-                    <div class="tr-val">${s.item_titulo}</div>
-                    <div class="tr-val">${s.aluno_nome}</div>
-                    <div>${pillSol[s.status_analise] || s.status_analise}</div>
+                    <div class="tr-val">${p.titulo}</div>
+                    <div class="tr-val">${p.aluno_nome}</div>
+                    <div>${pillPerdido[p.status] || p.status || '—'}</div>
                 </div>
             `).join('');
         }
