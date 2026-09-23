@@ -11,7 +11,7 @@
 
 <nav class="nav">
     <a href="index.html" class="logo">
-        <div class="logo-mark">D/div>
+        <div class="logo-mark">D</div>
         <div class="logo-text">Dev<span>vo</span></div>
     </a>
     <div class="nav-links">
@@ -32,14 +32,22 @@
         <h3>Solicitar resgate</h3>
         <p>Preencha seus dados. A secretaria vai analisar e entrar em contato.</p>
         <input type="hidden" id="modal-id-item">
+        
         <div class="form-field">
             <label>Sua matricula / RM</label>
             <input type="text" id="modal-matricula" placeholder="Ex: 12345678">
         </div>
+        
+        <div class="form-field">
+            <label>Sua senha</label>
+            <input type="password" id="modal-senha" placeholder="Digite sua senha">
+        </div>
+
         <div class="form-field">
             <label>Como voce prova que e seu?</label>
             <textarea id="modal-mensagem" placeholder="Descreva detalhes unicos do item..."></textarea>
         </div>
+        
         <div class="modal-actions">
             <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
             <button class="btn btn-red" onclick="enviarSolicitacao()">Enviar solicitacao</button>
@@ -130,21 +138,28 @@
     }
 
     async function enviarSolicitacao() {
-        const idItem   = document.getElementById('modal-id-item').value;
+        const idItem    = document.getElementById('modal-id-item').value;
         const matricula = document.getElementById('modal-matricula').value.trim();
-        const mensagem = document.getElementById('modal-mensagem').value.trim();
+        const senha     = document.getElementById('modal-senha').value.trim();
+        const mensagem  = document.getElementById('modal-mensagem').value.trim();
 
-        if (!matricula || !mensagem) { toast('Preencha todos os campos.', 'err'); return; }
+        if (!matricula || !senha || !mensagem) { 
+            toast('Preencha todos os campos.', 'err'); 
+            return; 
+        }
 
         try {
             const resUser = await fetch(`${API}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ matricula, senha: '' })
+                body: JSON.stringify({ matricula, senha })
             });
             const usuario = await resUser.json();
 
-            if (!usuario.id_usuario) { toast('Matricula nao encontrada.', 'err'); return; }
+            if (!resUser.ok || !usuario.id_usuario) { 
+                toast(usuario.error || 'Matricula ou senha incorretas.', 'err'); 
+                return; 
+            }
 
             const res = await fetch(`${API}/solicitacao`, {
                 method: 'POST',
