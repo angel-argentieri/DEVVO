@@ -62,6 +62,14 @@ class SolicitacaoController {
                     break;
                 }
             }
+        } elseif ($status === 'recusada') {
+            $solicitacoes = $this->model->buscarTodas();
+            foreach ($solicitacoes as $s) {
+                if ($s['id_solicitacao'] == $id) {
+                    $this->modelItem->atualizarStatus($s['id_item'], 'disponivel');
+                    break;
+                }
+            }
         }
 
         $this->view->sendResponse(['message' => 'Status atualizado.']);

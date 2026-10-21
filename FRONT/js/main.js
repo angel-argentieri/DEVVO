@@ -1,4 +1,4 @@
-const API = 'http://localhost/Devvo/API/PUBLIC';
+const API = 'http://localhost/DEVVO/API/PUBLIC';
 
 function toast(msg, tipo) {
     if (!tipo) tipo = 'ok';
@@ -30,6 +30,7 @@ function formatarData(dataStr) {
 
 function badgeStatus(status) {
     if (status === 'disponivel') return '<span class="badge badge-ok">Disponivel</span>';
+    if (status === 'em_analise') return '<span class="badge badge-hold">Em analise</span>';
     if (status === 'entregue')   return '<span class="badge badge-gray">Entregue</span>';
     if (status === 'doado')      return '<span class="badge badge-gray">Doado</span>';
     return '';
@@ -37,6 +38,7 @@ function badgeStatus(status) {
 
 function pillStatus(status) {
     if (status === 'disponivel') return '<span class="pill pill-ok">Disponivel</span>';
+    if (status === 'em_analise') return '<span class="pill pill-hold">Em analise</span>';
     if (status === 'entregue')   return '<span class="pill pill-gray">Entregue</span>';
     if (status === 'doado')      return '<span class="pill pill-gray">Doado</span>';
     return status;

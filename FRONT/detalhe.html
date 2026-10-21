@@ -14,7 +14,7 @@
         <div class="logo-mark">D</div>
         <div class="logo-text">Dev<span>vo</span></div>
     </a>
-    <div class="nav-links">
+    <div class="nav-links" id="nav-links">
         <a href="index.html"><button class="btn btn-ghost">Voltar para lista</button></a>
     </div>
 </nav>
@@ -30,24 +30,14 @@
 <div class="modal-overlay" id="modal-resgatar">
     <div class="modal">
         <h3>Solicitar resgate</h3>
-        <p>Preencha seus dados. A secretaria vai analisar e entrar em contato.</p>
+        <p>Descreva como voce prova que o item e seu. A secretaria vai analisar e entrar em contato.</p>
         <input type="hidden" id="modal-id-item">
-        
-        <div class="form-field">
-            <label>Sua matricula / RM</label>
-            <input type="text" id="modal-matricula" placeholder="Ex: 12345678">
-        </div>
-        
-        <div class="form-field">
-            <label>Sua senha</label>
-            <input type="password" id="modal-senha" placeholder="Digite sua senha">
-        </div>
 
         <div class="form-field">
             <label>Como voce prova que e seu?</label>
             <textarea id="modal-mensagem" placeholder="Descreva detalhes unicos do item..."></textarea>
         </div>
-        
+
         <div class="modal-actions">
             <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
             <button class="btn btn-red" onclick="enviarSolicitacao()">Enviar solicitacao</button>
@@ -59,6 +49,17 @@
 
 <script src="js/main.js"></script>
 <script>
+    const usuario = getUsuario();
+    if (!usuario) {
+        window.location.href = 'login.html';
+    }
+
+    if (usuario) {
+        document.getElementById('nav-links').innerHTML =
+            '<span style="font-size:13px;color:#555">' + usuario.nome + '</span>' +
+            '<a href="index.html"><button class="btn btn-ghost">Voltar para lista</button></a>';
+    }
+
     const params = new URLSearchParams(window.location.search);
     const idItem = params.get('id');
 
@@ -72,6 +73,11 @@
             if (!item || item.error) { window.location.href = 'index.html'; return; }
 
             document.title = `Devvo — ${item.titulo}`;
+
+            let textoBotao = 'E meu!';
+            if (item.status === 'em_analise') textoBotao = 'Item em analise';
+            else if (item.status === 'entregue') textoBotao = 'Item entregue';
+            else if (item.status === 'doado') textoBotao = 'Item doado';
 
             document.getElementById('detalhe-wrap').innerHTML = `
                 <button class="back-btn" onclick="history.back()">
@@ -114,7 +120,7 @@
                             <button class="btn btn-red"
                                 onclick="abrirModal(${item.id_item})"
                                 ${item.status !== 'disponivel' ? 'disabled style="opacity:.4;cursor:default"' : ''}>
-                                ${item.status === 'disponivel' ? 'E meu!' : 'Item em analise'}
+                                ${textoBotao}
                             </button>
                             <button class="btn btn-outline" onclick="compartilhar()">
                                 <i class="ti ti-share"></i> Compartilhar
@@ -128,8 +134,8 @@
         }
     }
 
-    function abrirModal(idItem) {
-        document.getElementById('modal-id-item').value = idItem;
+    function abrirModal(id) {
+        document.getElementById('modal-id-item').value = id;
         document.getElementById('modal-resgatar').classList.add('aberto');
     }
 
@@ -138,41 +144,30 @@
     }
 
     async function enviarSolicitacao() {
-        const idItem    = document.getElementById('modal-id-item').value;
-        const matricula = document.getElementById('modal-matricula').value.trim();
-        const senha     = document.getElementById('modal-senha').value.trim();
-        const mensagem  = document.getElementById('modal-mensagem').value.trim();
+        const id = document.getElementById('modal-id-item').value;
+        const mensagem = document.getElementById('modal-mensagem').value.trim();
 
-        if (!matricula || !senha || !mensagem) { 
-            toast('Preencha todos os campos.', 'err'); 
+        if (!mensagem) { 
+            toast('Descreva como prova que o item e seu.', 'err'); 
             return; 
         }
 
         try {
-            const resUser = await fetch(`${API}/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ matricula, senha })
-            });
-            const usuario = await resUser.json();
-
-            if (!resUser.ok || !usuario.id_usuario) { 
-                toast(usuario.error || 'Matricula ou senha incorretas.', 'err'); 
-                return; 
-            }
-
             const res = await fetch(`${API}/solicitacao`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_item: idItem, id_aluno: usuario.id_usuario, mensagem })
+                body: JSON.stringify({ id_item: id, id_aluno: usuario.id_usuario, mensagem })
             });
+
+            const data = await res.json();
 
             if (res.ok) {
                 toast('Solicitacao enviada! A secretaria vai analisar.', 'ok');
                 fecharModal();
+                document.getElementById('modal-mensagem').value = '';
                 setTimeout(() => carregarItem(), 1000);
             } else {
-                toast('Erro ao enviar solicitacao.', 'err');
+                toast(data.error || 'Erro ao enviar solicitacao.', 'err');
             }
         } catch (e) {
             toast('Erro de conexao.', 'err');

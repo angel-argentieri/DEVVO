@@ -11,7 +11,7 @@
 
 <nav class="nav">
     <a href="index.html" class="logo">
-        <div class="logo-mark">D/div>
+        <div class="logo-mark">D</div>
         <div class="logo-text">Dev<span>vo</span></div>
     </a>
     <div class="nav-links">
@@ -80,9 +80,12 @@
     const usuario = redirecionarSeNaoLogado('admin');
     if (usuario) document.getElementById('nome-admin').textContent = usuario.nome;
 
+    let listaSolicitacoes = [];
+
     async function carregarSolicitacoes() {
         const res  = await fetch(`${API}/solicitacoes`);
         const sols = await res.json();
+        listaSolicitacoes = sols;
 
         const tabela = document.getElementById('tabela-solicitacoes');
 
@@ -110,7 +113,7 @@
                 <div>${pillSol[s.status_analise] || s.status_analise}</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap">
                     <button class="btn-dar" style="background:transparent;color:var(--vermelho-text);border:1px solid var(--vermelho-borda)"
-                        onclick="verMensagem('${s.mensagem.replace(/'/g, "\\'")}')">
+                        onclick="abrirMensagem(${s.id_solicitacao})">
                         Ver prova
                     </button>
                     ${s.status_analise === 'pendente' ? `
@@ -141,18 +144,16 @@
         }
     }
 
-    function verMensagem(msg) {
-        document.getElementById('texto-mensagem').textContent = msg;
-        document.getElementById('modal-mensagem').classList.add('aberto');
+    function abrirMensagem(id) {
+        const s = listaSolicitacoes.find(item => item.id_solicitacao == id);
+        if (s) {
+            document.getElementById('texto-mensagem').textContent = s.mensagem;
+            document.getElementById('modal-mensagem').classList.add('aberto');
+        }
     }
 
     function fecharModal() {
         document.getElementById('modal-mensagem').classList.remove('aberto');
-    }
-
-    function sair() {
-        localStorage.removeItem('Devvo_usuario');
-        window.location.href = 'login.html';
     }
 
     carregarSolicitacoes();

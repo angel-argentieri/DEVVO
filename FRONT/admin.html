@@ -61,6 +61,7 @@
             </div>
             <div class="stat-card">
                 <div class="stat-num" id="stat-analise">—</div>
+                <div class="stat-label">Em analise</div>
             </div>
             <div class="stat-card">
                 <div class="stat-num" id="stat-entregues">—</div>
@@ -113,25 +114,29 @@
     if (usuario) document.getElementById('nome-admin').textContent = usuario.nome;
 
     async function carregarDashboard() {
-        const [resDash, resItens, resPerdidos] = await Promise.all([
+        const [resDash, resItens, resPerdidos, resSols] = await Promise.all([
             fetch(`${API}/dashboard`),
             fetch(`${API}/itens-admin`),
-            fetch(`${API}/itens-perdidos`)
+            fetch(`${API}/itens-perdidos`),
+            fetch(`${API}/solicitacoes`)
         ]);
 
         const dash     = await resDash.json();
         const itens    = await resItens.json();
         const perdidos = await resPerdidos.json();
+        const sols     = await resSols.json();
 
         document.getElementById('stat-disponiveis').textContent = dash.disponiveis;
         document.getElementById('stat-analise').textContent     = dash.em_analise;
         document.getElementById('stat-entregues').textContent   = dash.entregues;
 
-        const pendentes = perdidos.filter(p => p.status === 'pendente').length;
+        const pendentes = sols.filter(s => s.status_analise === 'pendente').length;
+        const badge = document.getElementById('badge-pendentes');
         if (pendentes > 0) {
-            const badge = document.getElementById('badge-pendentes');
             badge.textContent = pendentes;
             badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
         }
 
         const tabela = document.getElementById('tabela-itens');
@@ -183,11 +188,6 @@
         });
         if (res.ok) { toast('Item marcado como entregue!', 'ok'); carregarDashboard(); }
         else toast('Erro ao atualizar status.', 'err');
-    }
-
-    function sair() {
-        localStorage.removeItem('devvo_usuario');
-        window.location.href = 'login.html';
     }
 
     carregarDashboard();

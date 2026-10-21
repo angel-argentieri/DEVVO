@@ -11,7 +11,7 @@
 
 <nav class="nav">
     <a href="index.html" class="logo">
-        <div class="logo-mark">D/div>
+        <div class="logo-mark">D</div>
         <div class="logo-text">Dev<span>vo</span></div>
     </a>
     <div class="nav-links">
@@ -162,11 +162,6 @@
         } catch (e) {
             toast('Erro de conexao.', 'err');
         }
-    }
-
-    function sair() {
-        localStorage.removeItem('devvo_usuario');
-        window.location.href = 'login.html';
     }
 
     carregarCategorias();

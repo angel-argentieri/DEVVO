@@ -25,7 +25,7 @@ CREATE TABLE Itens (
     foto VARCHAR(255),
     local_encontrado VARCHAR(100) NOT NULL,
     local_armazenado VARCHAR(100),
-    status ENUM('disponivel', 'entregue', 'doado') NOT NULL DEFAULT 'disponivel',
+    status ENUM('disponivel', 'em_analise', 'entregue', 'doado') NOT NULL DEFAULT 'disponivel',
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_categoria) REFERENCES Categorias(id_categoria),
     FOREIGN KEY (id_usuario_cadastro) REFERENCES Usuarios(id_usuario)
@@ -42,6 +42,19 @@ CREATE TABLE Solicitacoes (
     FOREIGN KEY (id_aluno) REFERENCES Usuarios(id_usuario)
 );
 
+CREATE TABLE ItensPerdidos (
+    id_perdido INT AUTO_INCREMENT PRIMARY KEY,
+    id_categoria INT NOT NULL,
+    id_aluno INT NOT NULL,
+    titulo VARCHAR(150) NOT NULL,
+    descricao TEXT,
+    local_perdido VARCHAR(100) NOT NULL,
+    status ENUM('pendente', 'encontrado', 'encerrado') NOT NULL DEFAULT 'pendente',
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_categoria) REFERENCES Categorias(id_categoria),
+    FOREIGN KEY (id_aluno) REFERENCES Usuarios(id_usuario)
+);
+
 INSERT INTO Categorias (nome) VALUES
 ('Roupas'),
 ('Eletronicos'),
@@ -49,10 +62,7 @@ INSERT INTO Categorias (nome) VALUES
 ('Documentos'),
 ('Outros');
 
--- Admin padrao. Senha: devvo@admin
+-- Admin padrao. Senha: password
 -- Troque a senha apos o primeiro acesso.
 INSERT INTO Usuarios (nome, matricula, email, senha, tipo_acesso) VALUES
 ('Administrador', 'ADMIN001', 'admin@sesi.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
-INSERT INTO Usuarios (nome, matricula, email, senha, tipo_acesso) VALUES
-('Administrador', 'ADMIN001', 'admin@sesi.com', 'password', 'admin');
-UPDATE Usuarios SET senha = 'password' WHERE matricula = 'ADMIN001';

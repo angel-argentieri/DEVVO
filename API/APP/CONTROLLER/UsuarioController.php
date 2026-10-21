@@ -14,7 +14,7 @@ class UsuarioController {
     public function login() {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        if (!$data['matricula'] || !$data['senha']) {
+        if (empty($data['matricula']) || empty($data['senha'])) {
             $this->view->sendResponse(['error' => 'Preencha matricula e senha.'], 400);
             return;
         }
@@ -26,7 +26,8 @@ class UsuarioController {
             return;
         }
 
-        if ($data['senha'] !== $usuario['senha']) {
+        $senhaOk = password_verify($data['senha'], $usuario['senha']) || ($data['senha'] === $usuario['senha']);
+        if (!$senhaOk) {
             $this->view->sendResponse(['error' => 'Senha incorreta.'], 401);
             return;
         }
@@ -41,7 +42,7 @@ class UsuarioController {
     public function cadastrar() {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        if (!$data['nome'] || !$data['matricula'] || !$data['senha']) {
+        if (empty($data['nome']) || empty($data['matricula']) || empty($data['senha'])) {
             $this->view->sendResponse(['error' => 'Nome, matricula e senha sao obrigatorios.'], 400);
             return;
         }

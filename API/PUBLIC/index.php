@@ -23,19 +23,23 @@ require_once '../APP/CONTROLLER/CategoriaController.php';
 $database = new Database();
 $db       = $database->getConnection();
 
-$itemController       = new ItemController($db);
+$itemController        = new ItemController($db);
 $solicitacaoController = new SolicitacaoController($db);
-$categoriaController  = new CategoriaController($db);
+$categoriaController   = new CategoriaController($db);
 $itemPerdidoController = new ItemPerdidoController($db);
-$usuarioController    = new UsuarioController($db);
+$usuarioController     = new UsuarioController($db);
 
 $path   = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$route  = basename($path);
+$route  = basename(rtrim($path, '/'));
 $method = $_SERVER['REQUEST_METHOD'];
 
 try {
     switch ($route) {
 
+        case '':
+        case 'API':
+        case 'PUBLIC':
+        case 'public':
         case 'health':
             echo json_encode(['status' => 'Devvo API online!']);
             exit;

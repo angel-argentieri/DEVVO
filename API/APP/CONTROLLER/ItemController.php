@@ -47,9 +47,13 @@ class ItemController {
 
         $foto = null;
         if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
-            $extensao   = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
+            $extensao    = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
             $nomeArquivo = uniqid('item_') . '.' . $extensao;
-            $destino     = '../../FRONT/uploads/' . $nomeArquivo;
+            $pastaDestino = __DIR__ . '/../../../FRONT/uploads/';
+            if (!is_dir($pastaDestino)) {
+                mkdir($pastaDestino, 0777, true);
+            }
+            $destino = $pastaDestino . $nomeArquivo;
             if (move_uploaded_file($_FILES['foto']['tmp_name'], $destino)) {
                 $foto = $nomeArquivo;
             }
