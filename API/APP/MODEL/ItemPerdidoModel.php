@@ -32,6 +32,13 @@ class ItemPerdidoModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function buscarPorId($id) {
+        $stmt = $this->db->prepare("SELECT * FROM ItensPerdidos WHERE id_perdido = :id");
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function atualizarStatus($id, $status) {
         $stmt = $this->db->prepare("UPDATE ItensPerdidos SET status = :status WHERE id_perdido = :id");
         $stmt->bindValue(':status', $status);

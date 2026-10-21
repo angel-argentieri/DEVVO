@@ -1,14 +1,17 @@
 <?php
 require_once '../APP/MODEL/SolicitacaoModel.php';
 require_once '../APP/MODEL/ItemModel.php';
+require_once '../APP/MODEL/NotificacaoModel.php';
 require_once '../APP/VIEW/BaseView.php';
 
 class SolicitacaoController {
+    private $db;
     private $model;
     private $modelItem;
     private $view;
 
     public function __construct($db) {
+        $this->db        = $db;
         $this->model     = new SolicitacaoModel($db);
         $this->modelItem = new ItemModel($db);
         $this->view      = new BaseView();
@@ -59,6 +62,8 @@ class SolicitacaoController {
             foreach ($solicitacoes as $s) {
                 if ($s['id_solicitacao'] == $id) {
                     $this->modelItem->atualizarStatus($s['id_item'], 'entregue');
+                    $notifModel = new NotificacaoModel($this->db);
+                    $notifModel->criar($s['id_aluno'], "Solicitacao aprovada!", "Sua solicitacao de resgate para o item '{$s['item_titulo']}' foi aprovada! Compareca a secretaria.");
                     break;
                 }
             }
@@ -67,6 +72,8 @@ class SolicitacaoController {
             foreach ($solicitacoes as $s) {
                 if ($s['id_solicitacao'] == $id) {
                     $this->modelItem->atualizarStatus($s['id_item'], 'disponivel');
+                    $notifModel = new NotificacaoModel($this->db);
+                    $notifModel->criar($s['id_aluno'], "Solicitacao recusada", "Sua solicitacao de resgate para o item '{$s['item_titulo']}' foi recusada pela secretaria.");
                     break;
                 }
             }

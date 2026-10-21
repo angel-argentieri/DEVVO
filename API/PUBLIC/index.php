@@ -19,6 +19,7 @@ require_once '../APP/CONTROLLER/ItemController.php';
 require_once '../APP/CONTROLLER/ItemPerdidoController.php';
 require_once '../APP/CONTROLLER/SolicitacaoController.php';
 require_once '../APP/CONTROLLER/CategoriaController.php';
+require_once '../APP/CONTROLLER/NotificacaoController.php';
 
 $database = new Database();
 $db       = $database->getConnection();
@@ -28,6 +29,7 @@ $solicitacaoController = new SolicitacaoController($db);
 $categoriaController   = new CategoriaController($db);
 $itemPerdidoController = new ItemPerdidoController($db);
 $usuarioController     = new UsuarioController($db);
+$notificacaoController = new NotificacaoController($db);
 
 $path   = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $route  = basename(rtrim($path, '/'));
@@ -73,6 +75,10 @@ try {
             if ($method === 'GET') { $itemPerdidoController->getPerdidos(); exit; }
             break;
 
+        case 'notificar-perdido':
+            if ($method === 'POST') { $itemPerdidoController->notificarEncontrado(); exit; }
+            break;
+
         case 'item-status':
             if ($method === 'PUT') { $itemController->atualizarStatus(); exit; }
             break;
@@ -95,6 +101,18 @@ try {
 
         case 'categorias':
             if ($method === 'GET') { $categoriaController->getCategorias(); exit; }
+            break;
+
+        case 'notificacoes':
+            if ($method === 'GET') { $notificacaoController->getNotificacoes(); exit; }
+            break;
+
+        case 'notificacao-lida':
+            if ($method === 'PUT') { $notificacaoController->marcarLida(); exit; }
+            break;
+
+        case 'notificacoes-limpar':
+            if ($method === 'PUT') { $notificacaoController->marcarTodasLidas(); exit; }
             break;
 
         default:

@@ -55,6 +55,16 @@ CREATE TABLE ItensPerdidos (
     FOREIGN KEY (id_aluno) REFERENCES Usuarios(id_usuario)
 );
 
+CREATE TABLE Notificacoes (
+    id_notificacao INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    titulo VARCHAR(150) NOT NULL,
+    mensagem TEXT NOT NULL,
+    lida TINYINT(1) NOT NULL DEFAULT 0,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario)
+);
+
 INSERT INTO Categorias (nome) VALUES
 ('Roupas'),
 ('Eletronicos'),
